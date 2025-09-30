@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "cJSON.h"
 
 // A struct to hold the response from the server
 struct MemoryStruct {
