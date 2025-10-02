@@ -17,7 +17,7 @@ char *readString() {
     int size = 0;
     int len = 0;
 
-    printf("Enter your AI prompt (can be of any length) : ");
+    printf("Enter your question :");
     while ((ch = fgetc(stdin)) != EOF && ch != '\n') {
         if (len + 1 >= size) {
             size = size == 0 ? 128 : size * 2;
