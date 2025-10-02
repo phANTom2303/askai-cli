@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>  // Required for nanosleep and struct timespec
-#include <time.h>
 
 #include "dependencies/cJSON.h"
 void sleep_ms(long milliseconds) {
