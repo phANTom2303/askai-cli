@@ -104,8 +104,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb,
     return realsize;
 }
 
-const char *preparePostData() {
-    char *userPrompt = readString();
+const char *preparePostData(char *userPrompt) {
     char *extraContext =
         "You are an AI assistant that generates responses formatted "
         "exclusively for a fixed-width, ASCII-only terminal. Adhere strictly "
@@ -252,7 +251,8 @@ int main() {
              "gemini-2.5-flash-lite:generateContent?key=%s",
              api_key);
 
-    const char *post_data = preparePostData();
+    char *userPrompt = readString();
+    const char *post_data = preparePostData(userPrompt);
     // Initialize libcurl globally
     curl_global_init(CURL_GLOBAL_ALL);
 
