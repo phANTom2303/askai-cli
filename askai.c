@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cJSON.h"
+#include "dependencies/cJSON.h"
 
 // A struct to hold the response from the server
 struct MemoryStruct {
@@ -48,7 +48,7 @@ char *create_gemini_json_payload(const char *prompt_text) {
     cJSON *part_item = cJSON_CreateObject();
     cJSON_AddItemToArray(parts_array, part_item);
     cJSON_AddStringToObject(part_item, "text", prompt_text);
-    printJSON(root);
+    // printJSON(root);
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
 
