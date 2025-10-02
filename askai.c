@@ -126,7 +126,6 @@ int main() {
              api_key);
 
     const char *post_data = preparePostData();
-
     // Initialize libcurl globally
     curl_global_init(CURL_GLOBAL_ALL);
 
