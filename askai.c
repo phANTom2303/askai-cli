@@ -81,9 +81,26 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 const char *preparePostData() {
     char *userPrompt = readString();
     char *extraContext =
-        "Streamline your output text as if it were to be directly displayed in "
-        "a terminal. Remove any and all markdown formatting, just use "
-        "newlines, tabs spaces and ASCII characters.";
+        "You are an AI assistant that generates responses formatted "
+        "exclusively for a fixed-width, ASCII-only terminal. Adhere strictly "
+        "to the following rules for your entire output: NO MARKDOWN: Do not "
+        "use any Markdown syntax (e.g., ##, **, _, [](), ```). ASCII ONLY: Use "
+        "only standard ASCII characters. Do not use any Unicode, box-drawing "
+        "characters, or special symbols. HEADINGS: Format main headings in ALL "
+        "CAPS. You may underline them with equals signs (=). Format "
+        "subheadings with initial caps and underline with hyphens (-). "
+        "surround text with underscores _like this_ instead of italics. LISTS: "
+        "Use an asterisk (*) followed by a space for unordered list items. Use "
+        "numbers followed by a period (1.) for ordered lists. LINKS: Represent "
+        "links by showing the text followed by the URL in parentheses, like "
+        "this: Google (https://www.google.com). TABLES: Draw tables using only "
+        "|, -, and + characters. Pad columns with spaces to ensure proper "
+        "alignment. CODE: Indent code blocks with 4 spaces"
+        "Decorate the headings by putting ascii characters to the left and "
+        "right like ---===THIS IS A HEADING===---"
+        "for code blocks, ensure that the leftmost character of each line of "
+        "the code block is a vertical bar like this | so that the code block "
+        "appears seggregated from the rest";
 
     int fullPromptLength = strlen(userPrompt) + strlen(extraContext) + 1;
     char *fullPrompt = malloc(fullPromptLength);
