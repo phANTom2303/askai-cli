@@ -94,6 +94,35 @@ const char *preparePostData() {
     const char *post_data = create_gemini_json_payload(fullPrompt);
 }
 
+char *parse_gemini_response(const char *response_json) {
+    char *extracted_text = NULL;
+    cJSON *root = cJSON_Parse(response_json);
+    if (root == NULL) {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL) {
+            fprintf(stderr, "Error before: %s\n", error_ptr);
+        }
+        return NULL;
+    }
+
+    // Navigate to: candidates -> [0] -> content -> parts -> [0] -> text
+    cJSON *candidates = cJSON_GetObjectItemCaseSensitive(root, "candidates");
+    cJSON *candidate = cJSON_GetArrayItem(candidates, 0);
+
+    cJSON *content = cJSON_GetObjectItemCaseSensitive(candidate, "content");
+
+    cJSON *parts = cJSON_GetObjectItemCaseSensitive(content, "parts");
+
+    cJSON *part = cJSON_GetArrayItem(parts, 0);
+
+    cJSON *text_obj = cJSON_GetObjectItemCaseSensitive(part, "text");
+
+    extracted_text = strdup(text_obj->valuestring);
+
+    cJSON_Delete(root);  // Free the parsed JSON object
+    return extracted_text;
+}
+
 const char *extractAPIkey() {
     // Get API Key from environment variable for security
     const char *api_key = getenv("GEMINI_API_KEY");
@@ -146,7 +175,8 @@ int main() {
         // Pass our 'chunk' struct to the callback function
         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
         // Set a user-agent
-        curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+        // curl_easy_setopt(curl_handle, CURLOPT_USERAGENT,
+        // "libcurl-agent/1.0");
 
         // Perform the request, res will get the return code
         res = curl_easy_perform(curl_handle);
@@ -157,7 +187,8 @@ int main() {
                     curl_easy_strerror(res));
         } else {
             // The request was successful, print the response
-            printf("Response from server:\n%s\n", chunk.memory);
+            char *responseText = parse_gemini_response(chunk.memory);
+            printf("Gemini Says : \n%s\n", responseText);
         }
 
         // Cleanup
