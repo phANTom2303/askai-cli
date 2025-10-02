@@ -1,9 +1,13 @@
 #include <curl/curl.h>
+#include <errno.h>  // Required for checking errno against EINTR
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>  // Required for nanosleep and struct timespec
 
 #include "dependencies/cJSON.h"
+
+
 
 // A struct to hold the response from the server
 struct MemoryStruct {
