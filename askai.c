@@ -8,6 +8,28 @@
 #include <time.h>       // Required for nanosleep and struct timespec
 
 #include "dependencies/cJSON.h"
+
+char *terminalFormattingContext =
+    "You are an AI assistant that generates responses formatted "
+    "exclusively for a fixed-width, ASCII-only terminal. Adhere strictly "
+    "to the following rules for your entire output: NO MARKDOWN: Do not "
+    "use any Markdown syntax (e.g., ##, **, _, [](), ```). ASCII ONLY: Use "
+    "only standard ASCII characters. Do not use any Unicode, box-drawing "
+    "characters, or special symbols. HEADINGS:"
+    "You may underline them with equals signs (=). Format "
+    "subheadings with initial caps and underline with hyphens (-). "
+    "surround text with underscores _like this_ instead of italics. LISTS: "
+    "Use an asterisk (*) followed by a space for unordered list items. Use "
+    "numbers followed by a period (1.) for ordered lists. LINKS: Represent "
+    "links by showing the text followed by the URL in parentheses, like "
+    "this: Google (https://www.google.com). TABLES: Draw tables using only "
+    "|, -, and + characters. Pad columns with spaces to ensure proper "
+    "alignment. CODE: Indent code blocks with 4 spaces"
+    "Decorate the headings by putting ascii characters to the left and "
+    "right like ---||  THIS IS A HEADING  ||---"
+    "whenever you go from one section to another, like explanation, to a code "
+    "block, or from one topic to another, "
+    "add a two new line characters";
 void sleep_ms(long milliseconds) {
     if (milliseconds < 0)
         return;
@@ -104,29 +126,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb,
     return realsize;
 }
 
-const char *preparePostData(char *userPrompt) {
-    char *extraContext =
-        "You are an AI assistant that generates responses formatted "
-        "exclusively for a fixed-width, ASCII-only terminal. Adhere strictly "
-        "to the following rules for your entire output: NO MARKDOWN: Do not "
-        "use any Markdown syntax (e.g., ##, **, _, [](), ```). ASCII ONLY: Use "
-        "only standard ASCII characters. Do not use any Unicode, box-drawing "
-        "characters, or special symbols. HEADINGS: Format main headings in ALL "
-        "CAPS. You may underline them with equals signs (=). Format "
-        "subheadings with initial caps and underline with hyphens (-). "
-        "surround text with underscores _like this_ instead of italics. LISTS: "
-        "Use an asterisk (*) followed by a space for unordered list items. Use "
-        "numbers followed by a period (1.) for ordered lists. LINKS: Represent "
-        "links by showing the text followed by the URL in parentheses, like "
-        "this: Google (https://www.google.com). TABLES: Draw tables using only "
-        "|, -, and + characters. Pad columns with spaces to ensure proper "
-        "alignment. CODE: Indent code blocks with 4 spaces"
-        "Decorate the headings by putting ascii characters to the left and "
-        "right like ---===THIS IS A HEADING===---"
-        "for code blocks, ensure that the leftmost character of each line of "
-        "the code block is a vertical bar like this | so that the code block "
-        "appears seggregated from the rest";
-
+const char *preparePostData(char *userPrompt, char *extraContext) {
     int fullPromptLength = strlen(userPrompt) + strlen(extraContext) + 1;
     char *fullPrompt = malloc(fullPromptLength);
 
@@ -252,7 +252,8 @@ int main() {
              api_key);
 
     char *userPrompt = readString();
-    const char *post_data = preparePostData(userPrompt);
+    const char *post_data =
+        preparePostData(userPrompt, terminalFormattingContext);
     // Initialize libcurl globally
     curl_global_init(CURL_GLOBAL_ALL);
 
