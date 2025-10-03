@@ -10,26 +10,25 @@
 #include "dependencies/cJSON.h"
 
 char *terminalFormattingContext =
-    "You are an AI assistant that generates responses formatted "
-    "exclusively for a fixed-width, ASCII-only terminal. Adhere strictly "
-    "to the following rules for your entire output: NO MARKDOWN: Do not "
-    "use any Markdown syntax (e.g., ##, **, _, [](), ```). ASCII ONLY: Use "
-    "only standard ASCII characters. Do not use any Unicode, box-drawing "
-    "characters, or special symbols. HEADINGS:"
-    "You may underline them with equals signs (=). Format "
-    "subheadings with initial caps and underline with hyphens (-). "
-    "surround text with underscores _like this_ instead of italics. LISTS: "
-    "Use an asterisk (*) followed by a space for unordered list items. Use "
-    "numbers followed by a period (1.) for ordered lists. LINKS: Represent "
-    "links by showing the text followed by the URL in parentheses, like "
-    "this: Google (https://www.google.com). TABLES: Draw tables using only "
-    "|, -, and + characters. Pad columns with spaces to ensure proper "
-    "alignment. CODE: Indent code blocks with 4 spaces"
-    "Decorate the headings by putting ascii characters to the left and "
-    "right like ---||  THIS IS A HEADING  ||---"
-    "whenever you go from one section to another, like explanation, to a code "
-    "block, or from one topic to another, "
-    "add a two new line characters";
+    "\n\n"
+    "====================================\n"
+    "OUTPUT FORMAT: TERMINAL PLAIN TEXT\n"
+    "====================================\n"
+    "Rules:\n"
+    "- ASCII only (no Unicode/emoji)\n"
+    "- No Markdown (**, __, ##, ```)\n"
+    "\n"
+    "Visual Elements:\n"
+    "  Headers:     === TITLE ===\n"
+    "  Subheaders:  --- Title ---\n"
+    "  Dividers:    ----------------\n"
+    "  Emphasis:    CAPS or _text_\n"
+    "  Lists:       * item or 1. item\n"
+    "  Code:        (indent 4 spaces)\n"
+    "  Links:       Name (url)\n"
+    "\n"
+    "Add blank lines between sections.\n"
+    "====================================\n";
 
 // A struct to hold the response from the server
 struct MemoryStruct {
@@ -271,11 +270,15 @@ int main() {
              "gemini-2.5-flash-lite:generateContent?key=%s",
              api_key);
 
-    char *history = malloc(512);  // Allocate initial buffer
+    char *history = malloc(1024);  // Increased buffer size
     strcpy(
         history,
-        "The following is the history of our conversation. Use my inputs and "
-        "your results as additional context before giving your next response:");
+        "CONVERSATION HISTORY:\n"
+        "Below is the complete conversation between user and assistant. "
+        "Maintain context from all previous exchanges. "
+        "user: indicates messages from the user. "
+        "model: indicates your previous responses.\n"
+        "---\n");
 
     while (1) {
         // Initialize the struct that will hold our response
