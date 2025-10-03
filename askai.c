@@ -22,7 +22,7 @@ char *terminalFormattingContext =
     "  Headers:     === TITLE ===\n"
     "  Subheaders:  --- Title ---\n"
     "  Dividers:    ----------------\n"
-    "  Emphasis:    CAPS or _text_\n"
+    "  Emphasis:    _text_\n"
     "  Lists:       * item or 1. item\n"
     "  Code:        (indent 4 spaces)\n"
     "  Links:       Name (url)\n"
@@ -85,7 +85,12 @@ char *readString() {
     int size = 0;
     int len = 0;
 
-    printf("Enter your question :");
+    // Get username from environment
+    const char *username = getenv("USER");  // On Linux/Mac
+    if (!username) {
+        username = "You";  // Final fallback
+    }
+    printf("\n%s : ", username);
     while ((ch = fgetc(stdin)) != EOF && ch != '\n') {
         if (len + 1 >= size) {
             size = size == 0 ? 128 : size * 2;
@@ -271,15 +276,17 @@ int main() {
              api_key);
 
     char *history = malloc(1024);  // Increased buffer size
-    strcpy(
-        history,
-        "CONVERSATION HISTORY:\n"
-        "Below is the complete conversation between user and assistant. "
-        "Maintain context from all previous exchanges. "
-        "user: indicates messages from the user. "
-        "model: indicates your previous responses.\n"
-        "---\n");
+    strcpy(history,
+           "CONVERSATION HISTORY:\n"
+           "Below is the complete conversation between user and assistant. "
+           "Maintain context from all previous exchanges. "
+           "user: indicates messages from the user. "
+           "model: indicates your previous responses.\n"
+           "---\n");
 
+    printf(
+        "Welcome to AskAI Chat. Get answers to your question. (type \"stop\" "
+        "and press enter to exit )");
     while (1) {
         // Initialize the struct that will hold our response
         struct MemoryStruct chunk;
