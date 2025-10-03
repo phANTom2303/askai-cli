@@ -38,11 +38,17 @@ struct MemoryStruct {
 };
 
 char *appendToHistory(char *history, char *role, char *contents) {
-    int newLen = strlen(history) + strlen(role) + strlen(contents) +
-                 3;  // plus 4 for \n  : \0
+    int historyLen = history ? strlen(history) : 0;
+    int newLen =
+        historyLen + strlen(role) + strlen(contents) + 3;  // +4 for "\n : \0"
+
     char *newHistory = realloc(history, newLen);
     if (!newHistory)
         return history;
+
+    if (historyLen == 0) {
+        newHistory[0] = '\0';  // Initialize empty string
+    }
 
     strcat(newHistory, "\n");
     strcat(newHistory, role);
@@ -141,12 +147,15 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb,
     return realsize;
 }
 
-const char *preparePostData(char *userPrompt, char *extraContext) {
-    int fullPromptLength = strlen(userPrompt) + strlen(extraContext) + 1;
+const char *preparePostData(char *userPrompt, char *extraContext,
+                            char *history) {
+    int fullPromptLength =
+        strlen(userPrompt) + strlen(extraContext) + strlen(history) + 1;
     char *fullPrompt = malloc(fullPromptLength);
 
     strcpy(fullPrompt, userPrompt);
     strcat(fullPrompt, extraContext);
+    strcat(fullPrompt, history);
     const char *post_data = create_gemini_json_payload(fullPrompt);
     free(fullPrompt);
     return post_data;
@@ -262,9 +271,11 @@ int main() {
              "gemini-2.5-flash-lite:generateContent?key=%s",
              api_key);
 
-    char *history =
-        "The following is the history of our converstaion. Use my inputs and "
-        "your results as additional context before giving your next response:";
+    char *history = malloc(512);  // Allocate initial buffer
+    strcpy(
+        history,
+        "The following is the history of our conversation. Use my inputs and "
+        "your results as additional context before giving your next response:");
 
     while (1) {
         // Initialize the struct that will hold our response
@@ -272,6 +283,7 @@ int main() {
         chunk.memory = malloc(1);  // will be grown as needed by the callback
         chunk.size = 0;            // no data at this point
 
+        printf("\n");
         char *userPrompt = readString();
         // Check if user wants to stop
         if (strcmp(userPrompt, "stop") == 0) {
@@ -282,7 +294,7 @@ int main() {
 
         history = appendToHistory(history, "user", userPrompt);
         const char *post_data =
-            preparePostData(userPrompt, terminalFormattingContext);
+            preparePostData(userPrompt, terminalFormattingContext, history);
         // Initialize libcurl globally
         curl_global_init(CURL_GLOBAL_ALL);
 
@@ -314,14 +326,17 @@ int main() {
             } else {
                 // The request was successful, print the response
                 char *responseText = parse_gemini_response(chunk.memory);
+                printf("\n");
                 displayStringWithDelay(responseText);
-                history = appendToHistory(history, "AI", responseText);
+                history = appendToHistory(history, "model", responseText);
             }
 
             // Cleanup
             curl_slist_free_all(headers);
             curl_easy_cleanup(curl_handle);
             free(chunk.memory);
+            free((void *)post_data);
+            free(userPrompt);
         } else {
             printf("Failed due to some network related error");
             break;
