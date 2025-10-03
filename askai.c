@@ -30,6 +30,27 @@ char *terminalFormattingContext =
     "whenever you go from one section to another, like explanation, to a code "
     "block, or from one topic to another, "
     "add a two new line characters";
+
+// A struct to hold the response from the server
+struct MemoryStruct {
+    char *memory;
+    size_t size;
+};
+
+char *appendToHistory(char *history, char *role, char *contents) {
+    int newLen = strlen(history) + strlen(role) + strlen(contents) +
+                 3;  // plus 4 for \n  : \0
+    char *newHistory = realloc(history, newLen);
+    if (!newHistory)
+        return history;
+
+    strcat(newHistory, "\n");
+    strcat(newHistory, role);
+    strcat(newHistory, ":");
+    strcat(newHistory, contents);
+    return newHistory;
+}
+
 void sleep_ms(long milliseconds) {
     if (milliseconds < 0)
         return;
@@ -38,12 +59,6 @@ void sleep_ms(long milliseconds) {
     req.tv_nsec = (milliseconds % 1000) * 1000000L;
     nanosleep(&req, NULL);
 }
-
-// A struct to hold the response from the server
-struct MemoryStruct {
-    char *memory;
-    size_t size;
-};
 
 void displayStringWithDelay(char *str) {
     char ch;
@@ -132,8 +147,9 @@ const char *preparePostData(char *userPrompt, char *extraContext) {
 
     strcpy(fullPrompt, userPrompt);
     strcat(fullPrompt, extraContext);
-    // The JSON data to send in the POST request
     const char *post_data = create_gemini_json_payload(fullPrompt);
+    free(fullPrompt);
+    return post_data;
 }
 
 char *parse_gemini_response(const char *response_json) {
@@ -235,11 +251,6 @@ int main() {
     CURL *curl_handle;
     CURLcode res;
 
-    // Initialize the struct that will hold our response
-    struct MemoryStruct chunk;
-    chunk.memory = malloc(1);  // will be grown as needed by the callback
-    chunk.size = 0;            // no data at this point
-
     const char *api_key = getApiKey();
     if (!api_key)
         return 0;
@@ -251,49 +262,70 @@ int main() {
              "gemini-2.5-flash-lite:generateContent?key=%s",
              api_key);
 
-    char *userPrompt = readString();
-    const char *post_data =
-        preparePostData(userPrompt, terminalFormattingContext);
-    // Initialize libcurl globally
-    curl_global_init(CURL_GLOBAL_ALL);
+    char *history =
+        "The following is the history of our converstaion. Use my inputs and "
+        "your results as additional context before giving your next response:";
 
-    // Initialize a curl easy handle
-    curl_handle = curl_easy_init();
-    if (curl_handle) {
-        // Set the required headers
-        struct curl_slist *headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
+    while (1) {
+        // Initialize the struct that will hold our response
+        struct MemoryStruct chunk;
+        chunk.memory = malloc(1);  // will be grown as needed by the callback
+        chunk.size = 0;            // no data at this point
 
-        // Set the curl options
-        curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-        curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, post_data);
-        // Set the callback function to handle the response
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION,
-                         WriteMemoryCallback);
-        // Pass our 'chunk' struct to the callback function
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
-        // Set a user-agent
-        // curl_easy_setopt(curl_handle, CURLOPT_USERAGENT,
-        // "libcurl-agent/1.0");
-
-        // Perform the request, res will get the return code
-        res = curl_easy_perform(curl_handle);
-
-        // Check for errors
-        if (res != CURLE_OK) {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-        } else {
-            // The request was successful, print the response
-            char *responseText = parse_gemini_response(chunk.memory);
-            displayStringWithDelay(responseText);
+        char *userPrompt = readString();
+        // Check if user wants to stop
+        if (strcmp(userPrompt, "stop") == 0) {
+            printf("Exiting AskAI CLI. Goodbye!\n");
+            free(userPrompt);
+            break;
         }
 
-        // Cleanup
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl_handle);
-        free(chunk.memory);
+        history = appendToHistory(history, "user", userPrompt);
+        const char *post_data =
+            preparePostData(userPrompt, terminalFormattingContext);
+        // Initialize libcurl globally
+        curl_global_init(CURL_GLOBAL_ALL);
+
+        // Initialize a curl easy handle
+        curl_handle = curl_easy_init();
+        if (curl_handle) {
+            // Set the required headers
+            struct curl_slist *headers = NULL;
+            headers =
+                curl_slist_append(headers, "Content-Type: application/json");
+
+            // Set the curl options
+            curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+            curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, post_data);
+            // Set the callback function to handle the response
+            curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION,
+                             WriteMemoryCallback);
+            // Pass our 'chunk' struct to the callback function
+            curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
+
+            // Perform the request, res will get the return code
+            res = curl_easy_perform(curl_handle);
+
+            // Check for errors
+            if (res != CURLE_OK) {
+                fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                        curl_easy_strerror(res));
+            } else {
+                // The request was successful, print the response
+                char *responseText = parse_gemini_response(chunk.memory);
+                displayStringWithDelay(responseText);
+                history = appendToHistory(history, "AI", responseText);
+            }
+
+            // Cleanup
+            curl_slist_free_all(headers);
+            curl_easy_cleanup(curl_handle);
+            free(chunk.memory);
+        } else {
+            printf("Failed due to some network related error");
+            break;
+        }
     }
 
     // Global cleanup
