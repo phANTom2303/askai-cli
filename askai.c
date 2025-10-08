@@ -156,7 +156,8 @@ int main() {
                 // The request was successful, print the response
                 char *responseText = parse_gemini_response(chunk.memory);
                 printf("\n");
-                displayStringWithDelay(responseText);
+                // displayStringWithDelay(responseText);
+                parseAndDisplayLines(responseText);
                 history = appendToHistory(history, "model", responseText);
             }
 

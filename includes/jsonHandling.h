@@ -11,4 +11,6 @@ const char *preparePostData(char *userPrompt, char *extraContext, char *history)
 
 //function to extract and return the text part of the response from gemini api
 char *parse_gemini_response(const char *response_json);
+
+void parseAndDisplayLines(const char *structured_json_string);
 #endif
