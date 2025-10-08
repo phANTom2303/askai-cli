@@ -6,8 +6,11 @@
 
 #include "cJSON.h"
 
+// --- Function to create the full JSON payload for the Gemini API ---
 char *create_gemini_json_payload(const char *prompt_text) {
     cJSON *root = cJSON_CreateObject();
+
+    // --- Create contents array (as in your original function) ---
     cJSON *contents_array = cJSON_AddArrayToObject(root, "contents");
     cJSON *content_item = cJSON_CreateObject();
     cJSON_AddItemToArray(contents_array, content_item);
@@ -15,7 +18,46 @@ char *create_gemini_json_payload(const char *prompt_text) {
     cJSON *part_item = cJSON_CreateObject();
     cJSON_AddItemToArray(parts_array, part_item);
     cJSON_AddStringToObject(part_item, "text", prompt_text);
-    // printJSON(root);
+
+    // --- MODIFIED PART: Add the generationConfig and responseSchema ---
+    cJSON *gen_config = cJSON_CreateObject();
+    cJSON_AddItemToObject(root, "generationConfig", gen_config);
+    cJSON_AddStringToObject(gen_config, "responseMimeType", "application/json");
+
+    cJSON *schema = cJSON_CreateObject();
+    cJSON_AddItemToObject(gen_config, "responseSchema", schema);
+    cJSON_AddStringToObject(schema, "type", "ARRAY");
+
+    cJSON *items = cJSON_CreateObject();
+    cJSON_AddItemToObject(schema, "items", items);
+    cJSON_AddStringToObject(items, "type", "OBJECT");
+
+    // Define properties within the "items" object
+    cJSON *properties = cJSON_CreateObject();
+    cJSON_AddItemToObject(items, "properties", properties);
+
+    // Define the "lineType" property with an enum
+    cJSON *line_type = cJSON_CreateObject();
+    cJSON_AddItemToObject(properties, "lineType", line_type);
+    cJSON_AddStringToObject(line_type, "type", "STRING");
+    const char *line_type_enum_values[] = {"text", "code", "quote", "heading",
+                                           "subheading"};
+    cJSON *line_type_enum = cJSON_CreateStringArray(line_type_enum_values, 5);
+    cJSON_AddItemToObject(line_type, "enum", line_type_enum);
+
+    // Define the "lineContent" property
+    cJSON *line_content = cJSON_CreateObject();
+    cJSON_AddItemToObject(properties, "lineContent", line_content);
+    cJSON_AddStringToObject(line_content, "type", "STRING");
+
+    // Add "required" and "propertyOrdering" for better model adherence
+    const char *required_fields[] = {"lineType", "lineContent"};
+    cJSON_AddItemToObject(items, "required",
+                          cJSON_CreateStringArray(required_fields, 2));
+    cJSON_AddItemToObject(items, "propertyOrdering",
+                          cJSON_CreateStringArray(required_fields, 2));
+
+    // --- Finalize and return string ---
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
 
@@ -65,6 +107,22 @@ char *parse_gemini_response(const char *response_json) {
     return extracted_text;
 }
 
+// --- Helper function to print a cJSON object in a formatted way ---
+void printJSON(cJSON *json) {
+    if (json == NULL) {
+        printf("Cannot print NULL JSON object.\n");
+        return;
+    }
+    char *formatted_string = cJSON_Print(json);
+    if (formatted_string) {
+        printf("%s\n", formatted_string);
+        free(formatted_string);  // cJSON_Print allocates memory, so we must
+                                 // free it
+    } else {
+        printf("Failed to print JSON object.\n");
+    }
+}
+
 // --- Function 2: The new function you requested ---
 // Parses the structured JSON string and displays its content line by line.
 void parseAndDisplayLines(const char *structured_json_string) {
@@ -88,6 +146,9 @@ void parseAndDisplayLines(const char *structured_json_string) {
         return;
     }
 
+    printf("\n\nReturned json object : \n ");
+    printJSON(structured_data);
+    printf("\n\n\n\n");
     // Iterate through the array of line objects
     cJSON *line_object = NULL;
     cJSON_ArrayForEach(line_object, structured_data) {
