@@ -20,3 +20,6 @@ askai: askai.c $(SOURCES) $(HEADERS)
 # You can run it with the command: make clean
 clean:
 	rm -f askai
+
+# The PHONY tag tells that these targets are not actual files in our project, important for things like all, clean, (and if needed then test, install etc)
+.PHONY: all clean
