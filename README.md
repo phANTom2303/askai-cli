@@ -4,6 +4,8 @@ A TUI application to have a ai chatbot companion built in C, using Gemini API, a
 
 # Installation : 
 
+NOTE : This project is designed in and around WSL Ubuntu, so if you plan on installing on any other OS, you may have to change commands/files to accomodate.
+
 1. clone this repository on your system
 
 2. run the following command to install libcurl : 
